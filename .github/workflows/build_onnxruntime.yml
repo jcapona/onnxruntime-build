@@ -1,0 +1,42 @@
+name: Build onnxruntime
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY_IMAGE: jcapona/onnxruntime
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/arm/v7
+          - linux/arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build using docker
+        run: |
+          mkdir build
+          docker run \
+            --rm \
+            --volume $PWD:/src \
+            --volume build:/build \
+            --workdir /src \
+            --platform ${{ matrix.platform }} \
+            debian:bookworm \
+            bash /src/build.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-build
+          path: ./build/*
